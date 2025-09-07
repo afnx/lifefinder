@@ -1,0 +1,4 @@
+pl_name,pl_orbper,pl_orbsmax,pl_orbeccen,pl_rade,pl_bmasse,pl_bmassj,pl_eqt,st_teff,st_rad,st_mass,st_metfe,discoverymethod,hostname,sy_snum,sy_dist
+TestPlanetA,365,1.0,0.01,1.0,1.0,,255,5778,1.0,1.0,0.0,Transit,TestStarA,1,10
+TestPlanetB,10,0.05,0.05,0.9,0.5,,300,4000,0.9,0.8,-0.1,Radial Velocity,TestStarB,1,20
+TestPlanetC,100,0.4,0.02,2.5,10.0,,350,5000,1.1,1.05,0.2,Imaging,TestStarC,1,50

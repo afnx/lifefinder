@@ -1,0 +1,12 @@
+version: "3.8"
+services:
+  lifefinder:
+    build: .
+    volumes:
+      - ./:/app
+      - ./data:/app/data
+      - ./cache:/app/cache
+    ports:
+      - "8501:8501"
+    environment:
+      - PYTHONUNBUFFERED=1

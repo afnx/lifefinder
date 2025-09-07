@@ -1,0 +1,21 @@
+{
+    "name": "LifeFinder Dev",
+    "dockerComposeFile": [
+        "../compose.yaml"
+    ],
+    "service": "lifefinder",
+    "workspaceFolder": "/app",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-azuretools.vscode-docker"
+            ]
+        }
+    },
+    "forwardPorts": [
+        8501,
+        8888
+    ]
+}

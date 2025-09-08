@@ -48,6 +48,7 @@ class NasaExoplanetClient:
         "st_mass",
         "st_met",
         "st_logg",
+        "st_spectype",
         # System data
         "sy_dist",
         "rastr",

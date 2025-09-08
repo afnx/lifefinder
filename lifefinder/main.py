@@ -1,26 +1,25 @@
-import argparse
 from lifefinder.data.nasa_client import NasaExoplanetClient
+from lifefinder.data.preprocessing import ExoplanetDataProcessor
 from lifefinder.logger import get_logger
 
 logger = get_logger("main")
 
 
-def main(limit: int = 5, force: bool = False):
-    # Fetch and display exoplanet data
-    client = NasaExoplanetClient()
-    df = client.fetch_exoplanets(force=force, limit=limit)
-    logger.info("Fetched %d rows", len(df))
+def main():
+    try:
+        client = NasaExoplanetClient()
+        raw_df = client.fetch_exoplanets(limit=1000)
+        logger.info(f"Fetched raw data with shape: {raw_df.shape}")
 
-    # Print the first few rows of the dataframe
-    print(df.head(limit).to_string(index=False))
+        clean_df = ExoplanetDataProcessor.clean_data(raw_df)
+        logger.info(f"Cleaned data shape: {clean_df.shape}")
 
+        final_df = ExoplanetDataProcessor.feature_engineering(clean_df)
+        logger.info(f"Processed data shape: {final_df.shape}")
 
-# Run this command:
-# python -m lifefinder.main --limit 10 --force
+        print(final_df.head(10))
+    except Exception as e:
+        logger.error(f"An error occurred: {e}", exc_info=True)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--limit", type=int, default=5)
-    parser.add_argument("--force", action="store_true", help="Force re-download")
-    args = parser.parse_args()
-    main(limit=args.limit, force=args.force)
+    main()

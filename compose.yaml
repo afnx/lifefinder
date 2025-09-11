@@ -10,3 +10,21 @@ services:
       - "8501:8501"
     environment:
       - PYTHONUNBUFFERED=1
+
+  jupyter:
+    image: jupyter/base-notebook
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./:/home/jovyan/work
+      - ./data:/home/jovyan/work/data
+      - ./cache:/home/jovyan/work/cache
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    command: >
+      /bin/bash -c "
+        pip install --upgrade pip &&
+        pip install -r /home/jovyan/work/requirements.txt &&
+        pip install ipykernel &&
+        start-notebook.sh --NotebookApp.token=''
+      "

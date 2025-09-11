@@ -2,3 +2,5 @@ pandas
 requests
 pytest
 python-dotenv
+scikit-learn
+matplotlib

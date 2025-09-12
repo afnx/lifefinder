@@ -12,8 +12,8 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.ensemble import ExtraTreesRegressor
 from typing import Optional
 
-from lifefinder.data.cleaning import ExoplanetCleaner
-from lifefinder.data.feature_engineering import ExoplanetFeatureEngineer
+from lifefinder.data.cleaner import ExoplanetCleaner
+from lifefinder.data.feature_engineer import ExoplanetFeatureEngineer
 
 
 def build_exoplanet_pipeline(

@@ -12,5 +12,18 @@ NASA_TAP_SYNC = os.getenv(
     "https://exoplanetarchive.ipac.caltech.edu/TAP/sync"
 )
 
-# default cache filename
+NASA_API_LIMIT = int(os.getenv("NASA_API_LIMIT", 100000))
+
+# Default cache filename
 DEFAULT_EXOPLANETS_CSV = RAW_DIR / "exoplanets.csv"
+
+# Training configuration
+TRAINING_CONFIG = {
+    "batch_size": int(os.getenv("BATCH_SIZE", 32)),
+    "epochs": int(os.getenv("EPOCHS", 10)),
+    "learning_rate": float(os.getenv("LEARNING_RATE", 1e-3)),
+    "hidden_dim": int(os.getenv("HIDDEN_DIM", 64)),
+    "dropout": float(os.getenv("DROPOUT", 0.3)),
+    "val_split": float(os.getenv("VAL_SPLIT", 0.2)),
+    "random_state": int(os.getenv("RANDOM_STATE", 42)),
+}

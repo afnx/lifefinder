@@ -25,3 +25,10 @@ class ExoplanetNN(nn.Module):
         x = self.dropout(x)
         x = torch.sigmoid(self.out(x))  # Probability [0,1]
         return x
+
+    def __call__(self, *args, **kwargs):
+        """
+        Explicitly route to forward().
+        Keeps hooks and nn.Module behavior intact.
+        """
+        return super().__call__(*args, **kwargs)

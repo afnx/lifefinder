@@ -1,23 +1,17 @@
-from lifefinder.data.nasa_client import NasaExoplanetClient
-from lifefinder.data.preprocessing import build_exoplanet_pipeline
-from lifefinder.logger import get_logger
-
-
-logger = get_logger("main")
-
 
 def main():
-    try:
-        client = NasaExoplanetClient()
-        raw_df = client.fetch_exoplanets(limit=1000)
-        logger.info(f"Fetched raw data with shape: {raw_df.shape}")
+    print("Welcome to LifeFinder!\n")
+    
+    print("To run the training script, use:")
+    print("python -m scripts.train --arg1 value1 --arg2 value2")
+    print("Replace --arg1 and --arg2 with the actual arguments required by train.py.\n")
 
-        pipeline = build_exoplanet_pipeline()
-        final_array = pipeline.fit_transform(raw_df)
-        logger.info(f"Processed data with shape: {final_array.shape}")
-    except Exception as e:
-        logger.error(f"An error occurred: {e}", exc_info=True)
+    print("For example, to train with default settings:")
+    print("python -m scripts.train --input_limit 1000 --epochs 10 --batch_size 32 --learning_rate 0.001")
 
+    print("\nTo run the prediction script, use:")
+    print("python -m scripts.predict --input path/to/input.csv --hidden_dim 64 --dropout 0.3")
+    print("Replace path/to/input.csv with the actual path to your input CSV file.")
 
 if __name__ == "__main__":
     main()

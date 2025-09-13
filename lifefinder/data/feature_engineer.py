@@ -68,10 +68,10 @@ class ExoplanetFeatureEngineer(TransformerMixin, BaseEstimator):
             HZ index = exp( -0.5 * ((pl_insol - 1.0) / sigma)^2 )
         """
         if "pl_insol" in X.columns:
-            X["habitable_zone_index"] = X["pl_insol"].apply(
-                lambda insol: np.exp(-0.5 * ((insol - 1.0) / self.hz_sigma) ** 2)
-                if np.isfinite(insol) else np.nan
-            )
+            pl_insol = X["pl_insol"].astype(float)
+            hz_index = np.exp(-0.5 * ((pl_insol - 1.0) / self.hz_sigma) ** 2)
+            hz_index[~np.isfinite(pl_insol)] = np.nan
+            X["habitable_zone_index"] = hz_index
         return X
 
     def _add_relative_radius_ratio(self, X):

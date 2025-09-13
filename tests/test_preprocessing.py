@@ -1,4 +1,4 @@
-from lifefinder.data.preprocessing import build_exoplanet_pipeline
+from lifefinder.data.preprocessor import build_exoplanet_pipeline
 
 import pytest
 import pandas as pd

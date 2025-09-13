@@ -11,9 +11,16 @@ from sklearn.impute import SimpleImputer, IterativeImputer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.ensemble import ExtraTreesRegressor
 from typing import Optional
+from functools import partial
 
-from lifefinder.data.cleaning import ExoplanetCleaner
-from lifefinder.data.feature_engineering import ExoplanetFeatureEngineer
+from lifefinder.data.cleaner import ExoplanetCleaner
+from lifefinder.data.feature_engineer import ExoplanetFeatureEngineer
+from lifefinder import config as cfg
+
+
+def select_present_columns(df, columns_to_select):
+    """Returns a list of columns from columns_to_select that are in df."""
+    return [col for col in columns_to_select if col in df.columns]
 
 
 def build_exoplanet_pipeline(
@@ -51,7 +58,7 @@ def build_exoplanet_pipeline(
         # Engineered numeric features
         "orbit_star_ratio",
         "planet_star_mass_ratio",
-        "habitable_zone_index",
+        # "habitable_zone_index", This is a target variable, should not be included in features
         "relative_radius_ratio",
         "log_pl_rade",
         "log_pl_bmasse",
@@ -83,8 +90,8 @@ def build_exoplanet_pipeline(
     ])
 
     transformers = [
-        ("num", numeric_transformer, lambda X: select_present_columns(X, numeric_features)),
-        ("cat", cat_transformer, lambda X: select_present_columns(X, categorical_features))
+        ("num", numeric_transformer, partial(select_present_columns, columns_to_select=numeric_features)),
+        ("cat", cat_transformer, partial(select_present_columns, columns_to_select=categorical_features)),
     ]
 
     preprocessor = ColumnTransformer(
@@ -94,12 +101,8 @@ def build_exoplanet_pipeline(
 
     pipeline = Pipeline([
         ("cleaning", ExoplanetCleaner()),
-        ("features", ExoplanetFeatureEngineer()),
+        ("features", ExoplanetFeatureEngineer(hz_sigma=cfg.TRAINING_CONFIG["hz_sigma"])),
         ("preprocessor", preprocessor)
     ])
 
     return pipeline
-
-def select_present_columns(df, columns_to_select):
-    """Returns a list of columns from columns_to_select that are in df."""
-    return [col for col in columns_to_select if col in df.columns]

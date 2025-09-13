@@ -6,6 +6,7 @@ services:
       - ./:/app
       - ./data:/app/data
       - ./cache:/app/cache
+      - ./models:/app/models
     ports:
       - "8501:8501"
     environment:

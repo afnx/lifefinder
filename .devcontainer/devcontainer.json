@@ -13,7 +13,8 @@
                 "ms-azuretools.vscode-docker",
                 "njpwerner.autodocstring",
                 "streetsidesoftware.code-spell-checker",
-                "ms-toolsai.jupyter"
+                "ms-toolsai.jupyter",
+                "charliermarsh.ruff"
             ],
             "settings": {
                 "python.pythonPath": "/usr/local/bin/python3",

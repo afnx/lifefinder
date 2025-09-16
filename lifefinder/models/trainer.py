@@ -6,15 +6,15 @@ import json
 from sklearn.metrics import accuracy_score, f1_score
 from typing import Optional
 
-from lifefinder import config as cfg
-
 
 class Trainer:
     """
     Trainer class to handle training and evaluation of the ExoplanetNN model.
     """
 
-    def __init__(self, model: nn.Module, lr: float = 1e-3, device: Optional[str] = None):
+    def __init__(
+        self, model: nn.Module, lr: float = 1e-3, device: Optional[str] = None
+    ):
         """
         Args:
             model (nn.Module): The model to train.
@@ -64,7 +64,7 @@ class Trainer:
         acc = accuracy_score(y_true, y_pred)
         f1 = f1_score(y_true, y_pred)
         return {"accuracy": acc, "f1": f1}
-    
+
     def save_checkpoint(self, path):
         torch.save(self.model.state_dict(), path)
 
@@ -72,6 +72,6 @@ class Trainer:
         self.model.load_state_dict(torch.load(path, map_location=self.device))
 
     @staticmethod
-    def log_metrics(metrics_list: list):
-        with open(cfg.TRAINING_LOG, "w") as f:
+    def log_metrics(metrics_list: list, path):
+        with open(path, "w") as f:
             json.dump(metrics_list, f, indent=2)

@@ -19,4 +19,4 @@ COPY . /app
 
 EXPOSE 8501 8888
 
-CMD python -m lifefinder.main && tail -f /dev/null
+CMD tail -f /dev/null

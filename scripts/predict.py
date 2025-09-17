@@ -1,19 +1,28 @@
 import joblib
 import torch
+import numpy as np
 import pandas as pd
 
 import lifefinder.utils.file_utils as fu
 import lifefinder.utils.cli_utils as cli
 
+from typing import Optional
+
 from lifefinder.models.pytorch_classifier import ExoplanetNN
 from lifefinder.models.trainer import Trainer
-from lifefinder.logger import get_logger
+from lifefinder.utils.logger import get_logger
 from lifefinder import config as cfg
 
 logger = get_logger("predict")
 
 
-def predict(input_file: str, pipeline_file: str, model_file: str) -> pd.DataFrame:
+def predict(
+    input_file: str,
+    pipeline_file: str,
+    model_file: str,
+    report_path: Optional[str] = None,
+    shap_path: Optional[str] = None,
+) -> pd.DataFrame:
     """
     Predict habitability of exoplanets from input CSV file.
     Args:
@@ -64,6 +73,28 @@ def predict(input_file: str, pipeline_file: str, model_file: str) -> pd.DataFram
         probs = model(X_tensor).squeeze().numpy()
 
     df["habitability_prob"] = probs
+
+    # Optionally save report
+    if report_path:
+        from lifefinder.reports.report import save_report
+
+        save_report(df, report_path)
+
+    # Optionally compute SHAP values
+    if shap_path:
+        from lifefinder.interpret.shap_utils import (
+            compute_shap_values,
+            plot_shap_summary,
+        )
+
+        features = X.toarray() if hasattr(X, "toarray") else np.array(X)
+
+        shap_values, shap_features = compute_shap_values(model, features)
+        if shap_values is not None and shap_features is not None:
+            # Get feature names from the preprocessor step
+            feature_names = pipeline.named_steps["preprocessor"].get_feature_names_out()
+            plot_shap_summary(shap_values, feature_names, shap_features, shap_path)
+
     return df
 
 
@@ -81,7 +112,7 @@ if __name__ == "__main__":
         logger.info(f"Input file selected: {input_file}")
 
         # Validate input file
-        fu.validate_file(input_file, "input file", ["csv"])
+        fu.validate_file(input_file, "Input file", ["csv"])
 
         # Select model
         model_file, pipeline_file, metrics_file = cli.prompt_model_selection(
@@ -108,12 +139,48 @@ if __name__ == "__main__":
             cli.prompt_with_default("Dropout rate", cfg.TRAINING_CONFIG["dropout"])
         )
 
+        save_report_confirm = (
+            input("Would you like to save the prediction report? (y/n) [n]: ")
+            .strip()
+            .lower()
+        )
+
+        report_path = None
+        if save_report_confirm == "y":
+            report_path = input(
+                "Path to save prediction report (txt/csv/html) (e.g., /home/user/report.csv): "
+            ).strip()
+            fu.validate_file(
+                report_path,
+                "Report file",
+                ["txt", "csv", "html"],
+                allow_nonexistent=True,
+            )
+
+        compute_shap_confirm = (
+            input(
+                "Would you like to compute SHAP values for the predictions? (y/n) [n]: "
+            )
+            .strip()
+            .lower()
+        )
+
+        shap_path = None
+        if compute_shap_confirm == "y":
+            shap_path = input(
+                "Path to save SHAP summary plot (png/pdf) (e.g., /home/user/shap_summary.png): "
+            ).strip()
+            fu.validate_file(
+                shap_path, "SHAP plot file", ["png", "pdf"], allow_nonexistent=True
+            )
+
         # Update config with any CLI overrides
         cfg.TRAINING_CONFIG["hidden_dim"] = hidden_dim
         cfg.TRAINING_CONFIG["dropout"] = dropout
 
         # Run prediction
-        result = predict(input_file, pipeline_file, model_file)
+        result = predict(input_file, pipeline_file, model_file, report_path, shap_path)
+
         if not result.empty:
             logger.info(
                 f"Prediction results:\n{result[['pl_name', 'habitability_prob']]}"

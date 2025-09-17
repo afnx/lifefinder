@@ -1,8 +1,8 @@
-from typing import Tuple, Any
-
 """
 Utility functions for command-line interface interactions.
 """
+
+from typing import Tuple, Any
 
 
 def prompt_with_default(prompt_text: str, default) -> Any:

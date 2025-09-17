@@ -15,7 +15,7 @@ from lifefinder.data.preprocessor import build_exoplanet_pipeline
 from lifefinder.models.pytorch_classifier import ExoplanetNN
 from lifefinder.models.trainer import Trainer
 from lifefinder.models.dataset import ExoplanetDataset
-from lifefinder.logger import get_logger
+from lifefinder.utils.logger import get_logger
 from lifefinder import config as cfg
 
 logger = get_logger("train")
@@ -201,16 +201,16 @@ def train(
     )
 
     # Extract target after feature engineering
-    if "habitable_zone_index" not in df_features.columns:
-        raise ValueError("No habitable_zone_index found in features")
+    if cfg.TARGET_FEATURE not in df_features.columns:
+        raise ValueError(f"No {cfg.TARGET_FEATURE} found in features")
     y = (
-        (df_features["habitable_zone_index"] > cfg.TRAINING_CONFIG["hz_threshold"])
+        (df_features[cfg.TARGET_FEATURE] > cfg.TRAINING_CONFIG["hz_threshold"])
         .astype(int)
         .values
     )
 
     # Remove target from X
-    X_df = df_features.drop(columns=["habitable_zone_index"])
+    X_df = df_features.drop(columns=[cfg.TARGET_FEATURE])
 
     # Preprocess X
     X = pipeline.named_steps["preprocessor"].transform(X_df)

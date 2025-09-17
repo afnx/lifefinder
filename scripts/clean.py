@@ -2,7 +2,7 @@ import pandas as pd
 
 from lifefinder.data.cleaner import ExoplanetCleaner
 from lifefinder.utils.file_utils import validate_file
-from lifefinder.logger import get_logger
+from lifefinder.utils.logger import get_logger
 
 logger = get_logger("train")
 

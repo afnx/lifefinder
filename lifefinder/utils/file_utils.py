@@ -85,6 +85,7 @@ def validate_file(
     file_path: str | Path,
     file_name: Optional[str],
     allowed_extensions: list,
+    allow_nonexistent: bool = False,
     throw: bool = True,
 ) -> bool:
     """
@@ -94,6 +95,7 @@ def validate_file(
         file_path (str | Path): Path to the file.
         file_name (Optional[str]): Name of the file.
         allowed_extensions (list): List of allowed file extensions. Example: ['txt', 'csv']
+        allow_nonexistent (bool): Whether to allow non-existent files.
         throw (bool): Whether to raise exceptions or return False on failure.
 
     Returns:
@@ -101,7 +103,7 @@ def validate_file(
     """
     try:
         path_obj = Path(file_path)
-        if not path_obj.is_file():
+        if not allow_nonexistent and not path_obj.is_file():
             raise FileNotFoundError(
                 f"{file_name if file_name else 'File'} is not found at {file_path}."
             )

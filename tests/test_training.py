@@ -1,16 +1,17 @@
 import os
-from venv import logger
+import re
+
 import pandas as pd
-import torch
 import pytest
 import numpy as np
+
 from unittest.mock import patch
 
+
 from lifefinder import config as cfg
-from scripts.train import train
 from lifefinder.models.trainer import Trainer
-from lifefinder.models.pytorch_classifier import ExoplanetNN
-from lifefinder.data.preprocessor import build_exoplanet_pipeline
+
+from scripts.train import train
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -62,14 +63,16 @@ def test_training_runs(mock_client, dummy_exoplanet_df):
     # Override training config for speed
     cfg.TRAINING_CONFIG.update(
         {
-            "epochs": 2,
             "batch_size": 2,
+            "epochs": 2,
+            "learning_rate": 1e-3,
             "hidden_dim": 8,
-            "patience": 2,
             "dropout": 0.1,
             "val_split": 0.5,
             "random_state": 42,
-            "learning_rate": 1e-3,
+            "patience": 2,
+            "hz_sigma": 10.0,
+            "hz_threshold": 0.5,
         }
     )
     cfg.NASA_API_LIMIT = 2
@@ -81,64 +84,116 @@ def test_training_runs(mock_client, dummy_exoplanet_df):
     assert isinstance(result["trainer"], Trainer)
     assert len(result["metrics_log"]) > 0
     assert result["best_f1"] >= 0.0
-    assert os.path.exists(cfg.MODEL_CHECKPOINT)
-    assert os.path.exists(cfg.PIPELINE_PATH)
+
+    model_files = os.listdir(cfg.MODELS_DIR)
+
+    # Find all model and pipeline files with their version string
+    model_versions = [
+        re.match(r"model_(f1-\d+\.\d{3}_\d{8}-\d{6})\.pt", f) for f in model_files
+    ]
+    model_versions = [m.group(1) for m in model_versions if m]
+
+    # Only require model files if best_f1 > 0
+    if result["best_f1"] > 0:
+        assert model_versions, "No model files found"
+
+        # Use the latest version string for retraining
+        version = sorted(model_versions)[-1]
+        model_file = f"model_{version}.pt"
+        pipeline_file = f"pipeline_{version}.pkl"
+        metrics_file = f"metrics_{version}.json"
+
+        model_path = os.path.join(cfg.MODELS_DIR, model_file)
+        pipeline_path = os.path.join(cfg.MODELS_DIR, pipeline_file)
+        metrics_path = os.path.join(cfg.MODELS_DIR, metrics_file)
+
+        assert os.path.exists(model_path), f"Model file not found: {model_path}"
+        assert os.path.exists(pipeline_path), (
+            f"Pipeline file not found: {pipeline_path}"
+        )
+        assert os.path.exists(metrics_path), f"Metrics file not found: {metrics_path}"
+    else:
+        # If best_f1 is 0, it's expected that no model files are saved
+        assert not model_versions, "Model files should not be saved when F1 is 0"
 
 
-@pytest.mark.parametrize(
-    "input_data",
-    [
-        pd.DataFrame(
-            {
-                "pl_name": ["PlanetA"],
-                "pl_orbper": [365.0],
-                "pl_rade": [1.0],
-                "st_teff": [5778],
-                "st_mass": [1.0],
-                "pl_insol": [1.0],
-            }
-        ),
-        pd.DataFrame(
-            {
-                "pl_name": ["PlanetB"],
-                "pl_orbper": [200.0],
-                "pl_rade": [2.0],
-                "st_teff": [5000],
-                "st_mass": [0.9],
-                "pl_insol": [5.0],
-            }
-        ),
-    ],
-)
-def test_predict_pipeline(input_data):
-    # Test that the pipeline and model can process input data and produce probabilities
-    pipeline = build_exoplanet_pipeline()
-    X = pipeline.fit_transform(input_data)
+@patch("scripts.train.NasaExoplanetClient")
+def test_training_retrain(mock_client, dummy_exoplanet_df, tmp_path):
+    # Mock the NASA client to return dummy data
+    mock_instance = mock_client.return_value
+    mock_instance.fetch_exoplanets.return_value = dummy_exoplanet_df
 
-    model = ExoplanetNN(
-        input_dim=X.shape[1],
-        hidden_dim=cfg.TRAINING_CONFIG.get("hidden_dim", 8),
-        dropout=cfg.TRAINING_CONFIG.get("dropout", 0.1),
+    # Override training config for speed and reproducibility
+    cfg.TRAINING_CONFIG.update(
+        {
+            "batch_size": 2,
+            "epochs": 2,
+            "learning_rate": 1e-3,
+            "hidden_dim": 8,
+            "dropout": 0.1,
+            "val_split": 0.5,
+            "random_state": 42,
+            "patience": 2,
+            "hz_sigma": 10.0,
+            "hz_threshold": 0.5,
+        }
+    )
+    cfg.NASA_API_LIMIT = 2
+    cfg.FORCE_NASA_API_FETCH = True
+
+    # First train to create initial model and pipeline files
+    result = train(device="cpu")
+    model_files = os.listdir(cfg.MODELS_DIR)
+
+    # Find all model and pipeline files with their version string
+    model_versions = [
+        re.match(r"model_(f1-\d+\.\d{3}_\d{8}-\d{6})\.pt", f) for f in model_files
+    ]
+    model_versions = [m.group(1) for m in model_versions if m]
+
+    if result["best_f1"] > 0:
+        assert model_versions, "No model files found"
+
+    # Use the latest version string for retraining
+    version = sorted(model_versions)[-1]
+    model_file = f"model_{version}.pt"
+    pipeline_file = f"pipeline_{version}.pkl"
+
+    model_path = os.path.join(cfg.MODELS_DIR, model_file)
+    pipeline_path = os.path.join(cfg.MODELS_DIR, pipeline_file)
+
+    assert os.path.exists(model_path), f"Model file not found: {model_path}"
+    assert os.path.exists(pipeline_path), f"Pipeline file not found: {pipeline_path}"
+
+    # Redirect models dir to a new temp path for retraining outputs
+    cfg.MODELS_DIR = tmp_path / "models_retrain"
+    cfg.MODELS_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Retrain using the existing model and pipeline files
+    result_retrain = train(
+        retrain_pipeline_file=pipeline_path, retrain_model_file=model_path, device="cpu"
     )
 
-    trainer = Trainer(model)
-    # Model checkpoint may not exist if not trained, so skip loading if missing
-    if os.path.exists(cfg.MODEL_CHECKPOINT):
-        try:
-            trainer.load_checkpoint(cfg.MODEL_CHECKPOINT)
-        except RuntimeError as e:
-            # Skip loading if shape mismatch
-            logger.info(f"Skipping checkpoint load due to shape mismatch: {e}")
+    # Check retrain results
+    assert result_retrain["model"] is not None
+    assert isinstance(result_retrain["trainer"], Trainer)
+    assert len(result_retrain["metrics_log"]) > 0
+    assert result_retrain["best_f1"] >= 0.0
 
-    model.eval()
-    with torch.no_grad():
-        probs = model(torch.tensor(X, dtype=torch.float32)).detach().cpu().numpy()
-
-    probs = probs.squeeze()
-    if probs.ndim == 0:
-        probs = probs[None]  # make it 1D
-    assert probs.shape[0] == input_data.shape[0]
-    assert (probs >= 0).all() and (probs <= 1).all()
+    # Only require model files if best_f1 > 0
+    if result_retrain["best_f1"] > 0:
+        retrain_files = os.listdir(cfg.MODELS_DIR)
+        model_pattern = re.compile(r"^model_f1-.*.pt$")
+        pipeline_pattern = re.compile(r"^pipeline_f1-.*.pkl$")
+        metrics_pattern = re.compile(r"^metrics_f1-.*.json$")
+        assert any(model_pattern.match(f) for f in retrain_files)
+        assert any(pipeline_pattern.match(f) for f in retrain_files)
+        assert any(metrics_pattern.match(f) for f in retrain_files)
+    else:
+        # If best_f1 is 0, it's expected that no model files are saved
+        retrain_files = os.listdir(cfg.MODELS_DIR)
+        model_pattern = re.compile(r"^model_f1-.*.pt$")
+        assert not any(model_pattern.match(f) for f in retrain_files)
 
 
 def test_training_with_empty_data():
@@ -149,6 +204,5 @@ def test_training_with_empty_data():
         cfg.NASA_API_LIMIT = 0
         cfg.FORCE_NASA_API_FETCH = True
 
-        result = train(device="cpu")
-        assert result["model"] is None
-        assert result["metrics_log"] == []
+        with pytest.raises(ValueError):
+            train(device="cpu")

@@ -1,5 +1,8 @@
+import matplotlib
+
+matplotlib.use("Agg")
+
 import os
-import sys
 import pytest
 import numpy as np
 import pandas as pd
@@ -8,8 +11,6 @@ from unittest.mock import patch, MagicMock
 from scripts.predict import predict
 
 from lifefinder.models.pytorch_classifier import ExoplanetNN
-
-sys.modules["lifefinder.interpret.shap_utils"] = MagicMock()
 
 
 @pytest.fixture
@@ -189,11 +190,11 @@ def test_predict_with_shap_path(
             "lifefinder.interpret.shap_utils.compute_shap_values",
             return_value=(np.array([[0.1] * 7]), np.array([[1.0] * 7])),
         ),
-        patch("lifefinder.interpret.shap_utils.plot_shap_summary") as mock_plot_shap,
+        patch("matplotlib.pyplot.savefig") as mock_savefig,
     ):
         result_df = predict(
             str(sample_input_csv), "pipeline.pkl", "model.pt", shap_path=str(shap_file)
         )
         assert "habitability_prob" in result_df.columns
-        mock_plot_shap.assert_called_once()
+        mock_savefig.assert_called_once()
         assert result_df["habitability_prob"].between(0, 1).all()

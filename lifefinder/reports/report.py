@@ -1,5 +1,7 @@
 import os
 import pandas as pd
+from datetime import datetime
+
 from lifefinder.utils.logger import get_logger
 
 logger = get_logger("report")
@@ -19,11 +21,12 @@ def generate_summary(df: pd.DataFrame) -> str:
         summary_lines = [
             "Exoplanet Habitability Prediction Report",
             "=" * 50,
+            f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
             f"Total planets analyzed: {len(df)}",
             "",
         ]
-        top_candidates = df.sort_values("habitability_prob", ascending=False).head(5)
-        summary_lines.append("Top 5 candidates:")
+        top_candidates = df.sort_values("habitability_prob", ascending=False).head(10)
+        summary_lines.append("Top 10 candidates:")
         for _, row in top_candidates.iterrows():
             summary_lines.append(f" - {row['pl_name']}: {row['habitability_prob']:.3f}")
         return "\n".join(summary_lines)

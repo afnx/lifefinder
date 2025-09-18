@@ -6,3 +6,4 @@ scikit-learn
 matplotlib
 torch
 torchvision
+shap

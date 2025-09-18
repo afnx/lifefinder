@@ -7,7 +7,7 @@ Caches a CSV to data/raw/exoplanets.csv by default.
 from pathlib import Path
 from typing import Optional
 from lifefinder.config import RAW_DIR, DEFAULT_EXOPLANETS_CSV, NASA_TAP_SYNC
-from lifefinder.logger import get_logger
+from lifefinder.utils.logger import get_logger
 import requests
 import pandas as pd
 

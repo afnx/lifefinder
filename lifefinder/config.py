@@ -24,13 +24,16 @@ DEFAULT_EXOPLANETS_CSV = RAW_DIR / "exoplanets.csv"
 
 # NASA TAP api endpoint
 NASA_TAP_SYNC = os.getenv(
-    "NASA_TAP_SYNC",
-    "https://exoplanetarchive.ipac.caltech.edu/TAP/sync"
+    "NASA_TAP_SYNC", "https://exoplanetarchive.ipac.caltech.edu/TAP/sync"
 )
 
 # NASA API rate limit
 NASA_API_LIMIT = int(os.getenv("NASA_API_LIMIT", 100000))
-FORCE_NASA_API_FETCH = os.getenv("FORCE_NASA_API_FETCH", "False").lower() in ("true", "1", "t")
+FORCE_NASA_API_FETCH = os.getenv("FORCE_NASA_API_FETCH", "False").lower() in (
+    "true",
+    "1",
+    "t",
+)
 
 # Training configuration
 TRAINING_CONFIG = {
@@ -45,3 +48,45 @@ TRAINING_CONFIG = {
     "hz_sigma": float(os.getenv("HABITABLE_ZONE_SIGMA", 100.0)),
     "hz_threshold": float(os.getenv("HABITABLE_ZONE_THRESHOLD", 0.5)),
 }
+
+TARGET_FEATURE = "habitable_zone_index"
+
+NUMERIC_FEATURES = [
+    "sy_snum",
+    "sy_pnum",
+    "disc_year",
+    "pl_orbper",
+    "pl_orbsmax",
+    "pl_rade",
+    "pl_radj",
+    "pl_bmasse",
+    "pl_bmassj",
+    "pl_dens",
+    "pl_orbeccen",
+    "pl_insol",
+    "pl_eqt",
+    "st_teff",
+    "st_rad",
+    "st_mass",
+    "st_met",
+    "st_logg",
+    "sy_dist",
+]
+
+ENGINEERED_NUMERIC_FEATURES = [
+    "orbit_star_ratio",
+    "planet_star_mass_ratio",
+    "relative_radius_ratio",
+    "log_pl_rade",
+    "log_pl_bmasse",
+    "log_orbit_star_ratio",
+]
+
+CATEGORICAL_FEATURES = [
+    "host_name",
+    "discoverymethod",
+    "disc_facility",
+    "st_spectype",
+    "rastr",
+    "decstr",
+]

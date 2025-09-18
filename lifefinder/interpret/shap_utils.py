@@ -69,15 +69,6 @@ def plot_shap_summary(
         None
     """
     try:
-        print(
-            "final shap_values shape:",
-            shap_values.shape
-            if not isinstance(shap_values, list)
-            else shap_values[0].shape,
-        )
-        print(">>> features.shape:", features.shape)
-        print(">>> len(feature_names):", len(feature_names))
-
         shap.summary_plot(
             shap_values, features=features, feature_names=feature_names, show=False
         )

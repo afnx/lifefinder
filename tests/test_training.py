@@ -7,11 +7,9 @@ import numpy as np
 
 from unittest.mock import patch
 
-
+from lifefinder.train import train
 from lifefinder import config as cfg
 from lifefinder.models.trainer import Trainer
-
-from scripts.train import train
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -54,7 +52,7 @@ def dummy_exoplanet_df():
     )
 
 
-@patch("scripts.train.NasaExoplanetClient")
+@patch("lifefinder.train.NasaExoplanetClient")
 def test_training_runs(mock_client, dummy_exoplanet_df):
     # Mock the NASA client to return dummy data
     mock_instance = mock_client.return_value
@@ -117,7 +115,7 @@ def test_training_runs(mock_client, dummy_exoplanet_df):
         assert not model_versions, "Model files should not be saved when F1 is 0"
 
 
-@patch("scripts.train.NasaExoplanetClient")
+@patch("lifefinder.train.NasaExoplanetClient")
 def test_training_retrain(mock_client, dummy_exoplanet_df, tmp_path):
     # Mock the NASA client to return dummy data
     mock_instance = mock_client.return_value
@@ -197,7 +195,7 @@ def test_training_retrain(mock_client, dummy_exoplanet_df, tmp_path):
 
 
 def test_training_with_empty_data():
-    with patch("scripts.train.NasaExoplanetClient") as mock_client:
+    with patch("lifefinder.train.NasaExoplanetClient") as mock_client:
         mock_instance = mock_client.return_value
         mock_instance.fetch_exoplanets.return_value = pd.DataFrame()
 

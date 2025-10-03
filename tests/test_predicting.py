@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 
 from unittest.mock import patch, MagicMock
-from scripts.predict import predict
 
+from lifefinder.predict import predict
 from lifefinder.models.pytorch_classifier import ExoplanetNN
 
 

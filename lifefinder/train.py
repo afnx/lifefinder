@@ -1,10 +1,8 @@
 import datetime
 import joblib
 import scipy.sparse
-import argparse
-from typing import Optional, Dict, Any
+from typing import Optional
 
-import lifefinder.utils.cli_utils as cli
 import lifefinder.utils.file_utils as fu
 
 from sklearn.model_selection import train_test_split
@@ -19,136 +17,6 @@ from lifefinder.utils.logger import get_logger
 from lifefinder import config as cfg
 
 logger = get_logger("train")
-
-
-def prompt_training_params() -> Dict[str, Any]:
-    """Prompt user for training parameters and return as dict."""
-    params = {
-        "force": cli.prompt_with_default("Force data fetching (Y/n)", "n").lower()
-        == "y",
-        "input_limit": int(
-            cli.prompt_with_default(
-                "Limit number of records to fetch", cfg.NASA_API_LIMIT
-            )
-        ),
-        "batch_size": int(
-            cli.prompt_with_default(
-                "Batch size for training", cfg.TRAINING_CONFIG["batch_size"]
-            )
-        ),
-        "epochs": int(
-            cli.prompt_with_default(
-                "Number of training epochs", cfg.TRAINING_CONFIG["epochs"]
-            )
-        ),
-        "learning_rate": float(
-            cli.prompt_with_default(
-                "Learning rate", cfg.TRAINING_CONFIG["learning_rate"]
-            )
-        ),
-        "hidden_dim": int(
-            cli.prompt_with_default(
-                "Hidden layer dimension", cfg.TRAINING_CONFIG["hidden_dim"]
-            )
-        ),
-        "dropout": float(
-            cli.prompt_with_default("Dropout rate", cfg.TRAINING_CONFIG["dropout"])
-        ),
-        "val_split": float(
-            cli.prompt_with_default(
-                "Validation split", cfg.TRAINING_CONFIG["val_split"]
-            )
-        ),
-        "random_state": int(
-            cli.prompt_with_default(
-                "Random state for splitting", cfg.TRAINING_CONFIG["random_state"]
-            )
-        ),
-        "patience": int(
-            cli.prompt_with_default(
-                "Early stopping patience", cfg.TRAINING_CONFIG.get("patience", 5)
-            )
-        ),
-        "device": cli.prompt_with_default(
-            "Device to use for training (e.g., 'cpu' or 'cuda')", "None"
-        ),
-        "hz_sigma": float(
-            cli.prompt_with_default(
-                "Habitable zone sigma for classification",
-                cfg.TRAINING_CONFIG["hz_sigma"],
-            )
-        ),
-        "hz_threshold": float(
-            cli.prompt_with_default(
-                "Habitable zone threshold for classification",
-                cfg.TRAINING_CONFIG["hz_threshold"],
-            )
-        ),
-    }
-    params["device"] = None if params["device"].lower() == "none" else params["device"]
-    return params
-
-
-def get_args() -> Dict[str, Any]:
-    parser = argparse.ArgumentParser(description="Train Lifefinder Exoplanet Model")
-    parser.add_argument(
-        "--default", action="store_true", help="Use default settings from .env file"
-    )
-    parser.add_argument(
-        "--retrain",
-        action="store_true",
-        help="Retrain using existing pipeline and model files",
-    )
-    args_cli = parser.parse_args()
-    args: Dict[str, Any] = {}
-
-    # Handle retrain/model selection logic
-    model_file, pipeline_file, metrics_file = None, None, None
-    if args_cli.retrain:
-        model_file, pipeline_file, metrics_file = cli.prompt_model_selection(
-            fu, cfg, logger
-        )
-        cli.display_model_metrics(metrics_file, fu, logger)
-
-    if args_cli.default:
-        logger.info("Using default settings from .env file.")
-        args.update(
-            {
-                "force": False,
-                "input_limit": cfg.NASA_API_LIMIT,
-                "batch_size": cfg.TRAINING_CONFIG["batch_size"],
-                "epochs": cfg.TRAINING_CONFIG["epochs"],
-                "learning_rate": cfg.TRAINING_CONFIG["learning_rate"],
-                "hidden_dim": cfg.TRAINING_CONFIG["hidden_dim"],
-                "dropout": cfg.TRAINING_CONFIG["dropout"],
-                "val_split": cfg.TRAINING_CONFIG["val_split"],
-                "random_state": cfg.TRAINING_CONFIG["random_state"],
-                "patience": cfg.TRAINING_CONFIG.get("patience", 5),
-                "device": None,
-                "hz_sigma": cfg.TRAINING_CONFIG["hz_sigma"],
-                "hz_threshold": cfg.TRAINING_CONFIG["hz_threshold"],
-            }
-        )
-        if args_cli.retrain and model_file and pipeline_file:
-            logger.warning(
-                "Ensure the selected model and pipeline match the default config."
-            )
-            args["retrain_model_file"] = model_file
-            args["retrain_pipeline_file"] = pipeline_file
-        return args
-
-    logger.info("Press Ctrl+C to abort at any time.")
-    logger.info(
-        "You can also run with --default to use default settings from the .env file."
-    )
-    logger.info("Please provide the following parameters:\n")
-
-    args.update(prompt_training_params())
-    if args_cli.retrain and model_file and pipeline_file:
-        args["retrain_model_file"] = model_file
-        args["retrain_pipeline_file"] = pipeline_file
-
-    return args
 
 
 def train(
@@ -322,45 +190,3 @@ def train(
         "X_val": X_val,
         "y_val": y_val,
     }
-
-
-if __name__ == "__main__":
-    try:
-        logger.info("Lifefinder Training Script")
-        logger.info("==========================")
-
-        # Get command line args or prompt user
-        args = get_args()
-
-        # Update config with any CLI overrides
-        cfg.TRAINING_CONFIG.update(
-            {
-                "batch_size": args["batch_size"],
-                "epochs": args["epochs"],
-                "learning_rate": args["learning_rate"],
-                "hidden_dim": args["hidden_dim"],
-                "dropout": args["dropout"],
-                "val_split": args["val_split"],
-                "random_state": args["random_state"],
-                "patience": args["patience"],
-                "hz_sigma": args["hz_sigma"],
-                "hz_threshold": args["hz_threshold"],
-            }
-        )
-
-        cfg.NASA_API_LIMIT = args["input_limit"]
-        cfg.FORCE_NASA_API_FETCH = args["force"]
-
-        logger.info("Starting the training process...")
-
-        result = train(
-            retrain_pipeline_file=args.get("retrain_pipeline_file"),
-            retrain_model_file=args.get("retrain_model_file"),
-            device=args.get("device"),
-        )
-        logger.info(f"Best F1 Score: {result['best_f1']:.3f}")
-    except KeyboardInterrupt:
-        print("\n")
-        logger.warning("Training interrupted by user.")
-    except Exception as e:
-        logger.error(f"{e}", exc_info=True)

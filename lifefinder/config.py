@@ -3,6 +3,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# Version
+VERSION = os.getenv("LIFEFINDER_VERSION", "0.0.1")
+
 # Data directories
 DATA_DIR = Path(os.getenv("LIFEFINDER_DATA", ROOT / "data"))
 RAW_DIR = Path(os.getenv("LIFEFINDER_RAW", DATA_DIR / "raw"))

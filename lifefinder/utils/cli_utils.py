@@ -2,6 +2,8 @@
 Utility functions for command-line interface interactions.
 """
 
+import typer
+
 from typing import Tuple, Any
 
 
@@ -16,7 +18,7 @@ def prompt_with_default(prompt_text: str, default) -> Any:
     Returns:
         The user's input or the default value.
     """
-    user_input = input(f"{prompt_text} [{default}]: ").strip()
+    user_input = typer.prompt(f"{prompt_text} [{default}]: ").strip()
     return default if user_input == "" else user_input
 
 
@@ -37,7 +39,7 @@ def prompt_model_selection(fu: Any, cfg: Any, logger: Any) -> Tuple[str, str, st
     print("\nHow would you like to sort the available saved models?")
     print("1. Sort by best F1 score (descending)")
     print("2. Sort by most recent (time created, descending)")
-    sort_choice = input("Enter 1 or 2: ").strip()
+    sort_choice = typer.prompt("Enter 1 or 2: ").strip()
 
     # List available model files in the default model directory
     models_dir = cfg.MODELS_DIR
@@ -67,7 +69,7 @@ def prompt_model_selection(fu: Any, cfg: Any, logger: Any) -> Tuple[str, str, st
             time_str = "N/A"
         print(f"{idx + 1}. {info['fname']} | F1: {f1_str} | Created: {time_str}")
 
-    model_idx = input("Select a model by number: ").strip()
+    model_idx = typer.prompt("Select a model by number: ").strip()
     try:
         model_idx = int(model_idx) - 1
         if not (0 <= model_idx < len(model_info)):

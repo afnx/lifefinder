@@ -7,3 +7,5 @@ matplotlib
 torch
 torchvision
 shap
+typer
+setuptools

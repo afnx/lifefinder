@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=65.5"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lifefinder"
+version = "0.0.1"
+description = "Exoplanet Life Probability Calculator "
+readme = "README.md"
+authors = [{ name = "Ali Fuat Numanoglu", email = "afn@alifuatnumanoglu.com" }]
+license = { text = "Business Source License 1.1" }
+requires-python = ">=3.11"
+
+keywords = ["exoplanet", "astrobiology", "machine-learning", "astronomy"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "License :: Other/Proprietary License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+Homepage = "https://lifefinder.afnprojects.com"
+Repository = "https://github.com/afnx/lifefinder"
+Documentation = "https://lifefinder.afnprojects.com/docs"
+"Bug Tracker" = "https://github.com/afnx/lifefinder/issues"
+Changelog = "https://github.com/afnx/lifefinder/blob/dev/CHANGELOG.md"
+
+dependencies = [
+    "torch>=2.8.0",
+    "torchvision>=0.23.0",
+    "scikit-learn>=1.7.2",
+    "pandas>=2.3.3",
+    "numpy>=2.3.3",
+    "matplotlib>=3.10.6",
+    "typer>=0.19.2",
+    "shap>=0.48.0",
+    "numba>=0.62.1",
+    "requests>=2.32.5",
+    "python-dotenv>=1.1.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "black", "flake8", "mypy", "pre-commit"]
+
+[project.scripts]
+lifefinder = "lifefinder.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["lifefinder*"]

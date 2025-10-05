@@ -61,15 +61,15 @@ def predict(
     trainer.load_checkpoint(model_file)
 
     # Predict
-    model.eval()
+    trainer.model.eval()
     with torch.no_grad():
         # Convert sparse matrix to dense if needed
         if hasattr(X, "toarray"):
             X_dense = X.toarray()
         else:
             X_dense = X
-        X_tensor = torch.tensor(X_dense, dtype=torch.float32)
-        probs = model(X_tensor).squeeze().numpy()
+        X_tensor = torch.tensor(X_dense, dtype=torch.float32).to(trainer.device)
+        probs = trainer.model(X_tensor).squeeze().cpu().numpy()
 
     df["habitability_prob"] = probs
 
@@ -77,7 +77,7 @@ def predict(
     if report_path:
         from lifefinder.reports.report import save_report
 
-        save_report(df, report_path)
+        save_report(df, report_path, fmt=report_path.split(".")[-1])
 
     # Optionally compute SHAP values
     if shap_path:
@@ -86,9 +86,9 @@ def predict(
             plot_shap_summary,
         )
 
-        features = X.toarray() if hasattr(X, "toarray") else np.array(X)
+        features = X.toarray() if hasattr(X, "toarray") else np.asarray(X)
 
-        shap_values, shap_features = compute_shap_values(model, features)
+        shap_values, shap_features = compute_shap_values(trainer.model, features)
         if shap_values is not None and shap_features is not None:
             # Get feature names from the preprocessor step
             feature_names = pipeline.named_steps["preprocessor"].get_feature_names_out()

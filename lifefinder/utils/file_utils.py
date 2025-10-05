@@ -4,6 +4,7 @@ File utility functions for Lifefinder.
 
 import os
 import re
+import json
 
 from datetime import datetime
 from typing import Optional
@@ -144,3 +145,34 @@ def validate_directory(
             raise e
         return False
     return True
+
+
+def extract_config_and_model_from_metrics(
+    metrics_path: str | Path,
+) -> tuple[dict, dict]:
+    """
+    Extract the 'config' and 'model' dictionaries from a metrics JSON file.
+
+    Args:
+        metrics_path (str | Path): Path to the metrics JSON file.
+
+    Returns:
+        tuple: (config: dict, model: dict)
+    """
+    path_obj = Path(metrics_path)
+    if not path_obj.is_file():
+        raise FileNotFoundError(f"Metrics file not found at {metrics_path}")
+
+    with open(path_obj, "r") as f:
+        data = json.load(f)
+
+    config = {}
+    model = {}
+
+    if isinstance(data, dict):
+        if "config" in data and isinstance(data["config"], dict):
+            config = data["config"]
+        if "model" in data and isinstance(data["model"], dict):
+            model = data["model"]
+
+    return config, model

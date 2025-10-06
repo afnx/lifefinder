@@ -122,6 +122,8 @@ def train(
 
     # Training loop with early stopping
     best_f1 = 0.0
+    best_model_path = None
+    best_pipeline_path = None
     patience_counter = 0
     training_log = []
 
@@ -201,6 +203,9 @@ def train(
             pipeline_path = cfg.MODELS_DIR / f"pipeline_{model_version}.pkl"
             metrics_path = cfg.MODELS_DIR / f"metrics_{model_version}.json"
 
+            best_model_path = model_path
+            best_pipeline_path = pipeline_path
+
             # Create final metrics structure
             final_metrics = {
                 **training_metadata,
@@ -242,6 +247,8 @@ def train(
         "model": model,
         "trainer": trainer,
         "best_f1": best_f1,
+        "best_model_path": best_model_path,
+        "best_pipeline_path": best_pipeline_path,
         "pipeline": pipeline,
         "X_train": X_train,
         "y_train": y_train,

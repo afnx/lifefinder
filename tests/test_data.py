@@ -1,9 +1,11 @@
 from pathlib import Path
-from lifefinder.data.nasa_client import NasaExoplanetClient
 import pandas as pd
 
 
 def test_fetch_from_local_sample():
+    # Import AFTER the conftest.py fixture has run and reloaded config
+    from lifefinder.data.nasa_client import NasaExoplanetClient
+
     sample = Path("tests/data/sample_exoplanets.csv")
     assert sample.exists(), "Create tests/data/sample_exoplanets.csv"
 

@@ -21,12 +21,6 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 
-Homepage = "https://lifefinder.afnprojects.com"
-Repository = "https://github.com/afnx/lifefinder"
-Documentation = "https://lifefinder.afnprojects.com/docs"
-"Bug Tracker" = "https://github.com/afnx/lifefinder/issues"
-Changelog = "https://github.com/afnx/lifefinder/blob/dev/CHANGELOG.md"
-
 dependencies = [
     "torch>=2.8.0",
     "torchvision>=0.23.0",
@@ -40,6 +34,13 @@ dependencies = [
     "requests>=2.32.5",
     "python-dotenv>=1.1.1",
 ]
+
+[project.urls]
+Homepage = "https://lifefinder.afnprojects.com"
+Repository = "https://github.com/afnx/lifefinder"
+Documentation = "https://lifefinder.afnprojects.com/docs"
+"Bug Tracker" = "https://github.com/afnx/lifefinder/issues"
+Changelog = "https://github.com/afnx/lifefinder/blob/dev/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = ["pytest", "black", "flake8", "mypy", "pre-commit"]

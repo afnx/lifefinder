@@ -32,6 +32,97 @@ def main(
 
 
 @app.command()
+def configure():
+    """Configure the LifeFinder settings."""
+
+    # Import logger here to avoid circular dependencies
+    from lifefinder.utils.logger import get_logger
+
+    logger = get_logger("configure")
+
+    from pathlib import Path
+
+    try:
+        example_path = Path(__file__).parent / ".env.example"
+        env_path = Path.home() / ".lifefinder" / ".env"
+
+        logger.info("Starting configuration process...")
+        logger.info("You can abort at any time by pressing Ctrl+C.")
+
+        config = []
+        with open(example_path, "r") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    config.append((line, None))
+                else:
+                    if "=" in line:
+                        key, val = line.split("=", 1)
+                        config.append((key.strip(), val.strip()))
+                    else:
+                        config.append((line, None))
+
+        logger.info("Please enter the configuration values.\n")
+
+        new_config = []
+        for entry, value in config:
+            if value is None:
+                new_config.append((entry, value))
+            else:
+                user_val = typer.prompt(entry, default=value)
+                new_config.append((entry, user_val))
+
+        logger.info(f"Saving configuration to {env_path}")
+
+        # Ensure every missing parent folder in env_path exists
+        env_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(env_path, "w") as f:
+            for entry, value in new_config:
+                if value is None:
+                    f.write(f"{entry}\n")
+                else:
+                    f.write(f"{entry}={value}\n")
+
+        logger.info("Success: Configuration saved (overwritten if existed).")
+        logger.info("Creating necessary directories...")
+
+        import lifefinder.config as cfg
+
+        # Create necessary directories
+        for directory in [
+            cfg.ARTIFACTS_DIR,
+            cfg.DATA_DIR,
+            cfg.RAW_DIR,
+            cfg.PROCESSED_DIR,
+            cfg.CACHE_DIR,
+            cfg.MODELS_DIR,
+            cfg.EVALUATION_DIR,
+        ]:
+            dir_path = Path(directory).expanduser()
+            logger.info(f"Creating directory: {dir_path}")
+            dir_path.mkdir(parents=True, exist_ok=True)
+
+        logger.info("Success: All necessary directories are set up.")
+        logger.info("Configuration process completed.")
+        logger.info("You can run lifefinder configure again to update settings.")
+        print("\nThank you for using LifeFinder!")
+        print("\nCrafted with ❤️  by afnx (github.com/afnx)\n")
+    except KeyboardInterrupt:
+        print("\n")
+        logger.warning("Training interrupted by user.")
+    except typer.Abort:
+        print("\n")
+        logger.warning("Training interrupted by user.")
+    except FileNotFoundError:
+        logger.error(
+            "Could not create configuration file. Check permissions and try again."
+        )
+    except Exception as e:
+        logger.error(f"{e}", exc_info=False)
+
+
+@app.command()
 def train(
     default: Annotated[
         bool, typer.Option("--default", help="Use default settings from .env file")
@@ -60,6 +151,9 @@ def train(
     from lifefinder import config as cfg
 
     try:
+        # Check configuration before proceeding
+        _check_configuration()
+
         # Default model parameters
         hidden_dim: int = cfg.TRAINING_CONFIG["hidden_dim"]
         dropout: float = cfg.TRAINING_CONFIG["dropout"]
@@ -192,7 +286,7 @@ def train(
             "One or more specified files were not found. Please check the paths and try again."
         )
     except Exception as e:
-        logger.error(f"{e}", exc_info=True)
+        logger.error(f"{e}", exc_info=False)
 
 
 @app.command()
@@ -214,6 +308,9 @@ def predict():
     from lifefinder import config as cfg
 
     try:
+        # Check configuration before proceeding
+        _check_configuration()
+
         input_file: str = typer.prompt(
             "\nPath to the input CSV file (e.g., /home/user/exoplanets.csv)"
         ).strip()
@@ -299,7 +396,7 @@ def predict():
             "One or more specified files were not found. Please check the paths and try again."
         )
     except Exception as e:
-        logger.error(f"{e}", exc_info=True)
+        logger.error(f"{e}", exc_info=False)
 
 
 @app.command()
@@ -322,6 +419,9 @@ def evaluate():
     from lifefinder import config as cfg
 
     try:
+        # Check configuration before proceeding
+        _check_configuration()
+
         input_file: str = typer.prompt(
             "\nPath to the input CSV file (e.g., /home/user/exoplanets.csv)"
         ).strip()
@@ -380,7 +480,7 @@ def evaluate():
             "One or more specified files were not found. Please check the paths and try again."
         )
     except Exception as e:
-        logger.error(f"{e}", exc_info=True)
+        logger.error(f"{e}", exc_info=False)
 
 
 @app.command()
@@ -434,6 +534,38 @@ def clean():
         )
     except Exception as e:
         logger.error(f"{e}", exc_info=True)
+
+
+def _check_configuration():
+    """Check if the configuration file exists and is valid."""
+    import os
+
+    from pathlib import Path
+
+    env_path = Path.home() / ".lifefinder" / ".env"
+    if not env_path.exists():
+        raise Exception(
+            "Configuration file not found. Please run 'lifefinder configure' first."
+        )
+
+    # Basic validation of essential config variables
+    required_vars = ["ARTIFACTS_DIR", "NASA_TAP_SYNC"]
+    missing_vars = [var for var in required_vars if os.getenv(var) is None]
+
+    if missing_vars:
+        raise Exception(
+            f"Missing essential configuration variables: {', '.join(missing_vars)}. "
+            "Please re-run the configuration."
+        )
+
+    # Check if ARTIFACTS_DIR exists
+    import lifefinder.config as cfg
+
+    artifacts_dir = cfg.ARTIFACTS_DIR
+    if not artifacts_dir or not Path(artifacts_dir).expanduser().exists():
+        raise Exception(
+            f"Artifacts directory '{artifacts_dir}' does not exist. Please re-run the configuration."
+        )
 
 
 if __name__ == "__main__":

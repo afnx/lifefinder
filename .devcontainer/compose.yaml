@@ -1,12 +1,12 @@
 version: "3.8"
 services:
   lifefinder:
-    build: .
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
     volumes:
-      - ./:/app
-      - ./data:/app/data
-      - ./cache:/app/cache
-      - ./models:/app/models
+      - ../:/app
+      - ../artifacts:/app/artifacts
     ports:
       - "8501:8501"
     environment:
@@ -17,9 +17,8 @@ services:
     ports:
       - "8888:8888"
     volumes:
-      - ./:/home/jovyan/work
-      - ./data:/home/jovyan/work/data
-      - ./cache:/home/jovyan/work/cache
+      - ../:/home/jovyan/work
+      - ../artifacts:/home/jovyan/work/artifacts
     environment:
       - JUPYTER_ENABLE_LAB=yes
     command: >

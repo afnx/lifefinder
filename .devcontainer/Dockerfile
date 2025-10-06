@@ -17,6 +17,9 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 COPY . /app
 
-EXPOSE 8501 8888
+# Install the lifefinder in development mode
+RUN pip install -e .
 
-CMD tail -f /dev/null
+EXPOSE 8501
+
+CMD ["tail", "-f", "/dev/null"]

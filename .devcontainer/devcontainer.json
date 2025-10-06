@@ -1,7 +1,7 @@
 {
     "name": "LifeFinder Dev",
     "dockerComposeFile": [
-        "../compose.yaml"
+        "compose.yaml"
     ],
     "service": "lifefinder",
     "workspaceFolder": "/app",

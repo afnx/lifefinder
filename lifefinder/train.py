@@ -122,35 +122,72 @@ def train(
 
     # Training loop with early stopping
     best_f1 = 0.0
+    best_model_path = None
+    best_pipeline_path = None
     patience_counter = 0
-    metrics_log = []
+    training_log = []
 
-    # Add training config as header in metrics log
-    metrics_log.append({"config": dict(cfg.TRAINING_CONFIG)})
+    # Create comprehensive training metadata
+    training_metadata = {
+        "name": "lifefinder",
+        "version": cfg.VERSION,
+        "experiment": {
+            "timestamp": datetime.datetime.now().isoformat(),
+            "is_retraining": is_retraining,
+            "retrain_files": {
+                "pipeline": retrain_pipeline_file,
+                "model": retrain_model_file,
+            }
+            if is_retraining
+            else None,
+        },
+        "config": dict(cfg.TRAINING_CONFIG),
+        "data": {
+            "raw_shape": raw_df.shape,
+            "processed_shape": X.shape,
+            "train_samples": len(X_train),
+            "val_samples": len(X_val),
+            "feature_count": input_dim,
+            "class_distribution": {
+                "positive": int(y.sum()),
+                "negative": int(len(y) - y.sum()),
+            },
+        },
+        "model": {
+            "input_dim": input_dim,
+            "output_dim": 1,
+            "architecture": "ExoplanetNN",
+            "activation": "ReLU",
+            "target_feature": cfg.TARGET_FEATURE,
+        },
+    }
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
     logger.info("Starting training...")
     for epoch in range(cfg.TRAINING_CONFIG["epochs"]):
         loss = trainer.train_epoch(train_dataloader)
-        metrics = trainer.evaluate(val_dataloader)
-        acc, f1 = metrics["accuracy"], metrics["f1"]
-
-        metrics_log.append(
-            {
-                "epoch": epoch + 1,
-                "loss": loss,
-                "accuracy": acc,
-                "f1": f1,
-                "timestamp": timestamp,
-            }
+        val_metrics = trainer.evaluate(
+            val_dataloader, cfg.TRAINING_CONFIG["hz_threshold"]
         )
+        acc, f1 = val_metrics["accuracy"], val_metrics["f1"]
+
+        epoch_log = {
+            "epoch": epoch + 1,
+            "train_loss": loss,
+            "val_accuracy": acc,
+            "val_f1": f1,
+            "val_precision": val_metrics.get("precision", None),
+            "val_recall": val_metrics.get("recall", None),
+            "epoch_timestamp": datetime.datetime.now().isoformat(),
+            "is_best": False,  # Will update if this is best
+        }
 
         logger.info(
             f"Epoch {epoch + 1}/{cfg.TRAINING_CONFIG['epochs']} - "
             f"Loss: {loss:.4f} - "
-            f"Acc: {metrics['accuracy']:.3f} - "
-            f"F1: {metrics['f1']:.3f}"
+            f"Acc: {acc:.3f} - "
+            f"F1: {f1:.3f}"
         )
 
         # Check for improvement
@@ -158,32 +195,60 @@ def train(
             best_f1 = f1
             patience_counter = 0
 
+            # Mark this epoch as best
+            epoch_log["is_best"] = True
+
             model_version = f"f1-{best_f1:.3f}_{timestamp}"
             model_path = cfg.MODELS_DIR / f"model_{model_version}.pt"
             pipeline_path = cfg.MODELS_DIR / f"pipeline_{model_version}.pkl"
             metrics_path = cfg.MODELS_DIR / f"metrics_{model_version}.json"
 
-            # Save the best model
+            best_model_path = model_path
+            best_pipeline_path = pipeline_path
+
+            # Create final metrics structure
+            final_metrics = {
+                **training_metadata,
+                "training": {
+                    "best_epoch": epoch + 1,
+                    "best_f1": best_f1,
+                    "total_epochs": epoch + 1,
+                    "early_stopped": False,
+                    "final_patience_counter": patience_counter,
+                },
+                "history": training_log.copy(),
+                "model_artifacts": {
+                    "model_path": str(model_path),
+                    "pipeline_path": str(pipeline_path),
+                    "metrics_path": str(metrics_path),
+                },
+            }
+
+            # Save artifacts
             trainer.save_checkpoint(model_path)
-            # Save the preprocessing pipeline
             joblib.dump(pipeline, pipeline_path)
-            # Save training metrics
-            Trainer.log_metrics(metrics_log, metrics_path)
+            Trainer.log_metrics(final_metrics, metrics_path)
 
             logger.info(f"New best model saved with F1={f1:.3f} at: {model_path}")
         else:
+            # Increment patience counter
+            # Stop if no improvement for 'patience' epochs
             patience_counter += 1
             if patience_counter >= cfg.TRAINING_CONFIG["patience"]:
                 logger.info("Early stopping triggered.")
                 break
+
+        # Append epoch log
+        training_log.append(epoch_log)
 
     logger.info("Training complete.")
 
     return {
         "model": model,
         "trainer": trainer,
-        "metrics_log": metrics_log,
         "best_f1": best_f1,
+        "best_model_path": best_model_path,
+        "best_pipeline_path": best_pipeline_path,
         "pipeline": pipeline,
         "X_train": X_train,
         "y_train": y_train,

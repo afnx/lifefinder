@@ -27,6 +27,7 @@ def sample_input_csv(tmp_path):
             "st_rad": [1.0],
             "st_mass": [1.0],
             "st_metfe": [0.0],
+            "pl_insol": [1.0],
         }
     )
     df.to_csv(csv_file, index=False)
@@ -62,9 +63,12 @@ def mock_pipeline():
 @pytest.fixture
 def mock_trainer(request):
     num_features = request.param
+    model = ExoplanetNN(num_features)
+
     trainer = MagicMock()
-    trainer.model = ExoplanetNN(num_features)
+    trainer.model = model
     trainer.load_checkpoint = MagicMock()
+
     return trainer
 
 
@@ -76,7 +80,7 @@ def patch_file_utils(monkeypatch):
     )
 
 
-@pytest.mark.parametrize("mock_trainer", [7], indirect=True)
+@pytest.mark.parametrize("mock_trainer", [8], indirect=True)
 def test_predict_success(sample_input_csv, mock_pipeline, mock_trainer):
     with (
         patch("joblib.load", return_value=mock_pipeline),
@@ -116,7 +120,7 @@ def test_predict_with_bad_input(tmp_path, input_df, mock_pipeline, mock_trainer)
         assert isinstance(df, pd.DataFrame)
 
 
-@pytest.mark.parametrize("mock_trainer", [7], indirect=True)
+@pytest.mark.parametrize("mock_trainer", [8], indirect=True)
 def test_predict_multiple_rows(tmp_path, mock_pipeline, mock_trainer):
     csv_file = tmp_path / "multi_input.csv"
     df = pd.DataFrame(
@@ -129,6 +133,7 @@ def test_predict_multiple_rows(tmp_path, mock_pipeline, mock_trainer):
             "st_rad": [1.0, 0.8],
             "st_mass": [1.0, 0.9],
             "st_metfe": [0.0, 0.1],
+            "pl_insol": [1.0, 0.5],
         }
     )
     df.to_csv(csv_file, index=False)
@@ -147,7 +152,7 @@ def test_predict_multiple_rows(tmp_path, mock_pipeline, mock_trainer):
         assert result_df["habitability_prob"].between(0, 1).all()
 
 
-@pytest.mark.parametrize("mock_trainer", [7], indirect=True)
+@pytest.mark.parametrize("mock_trainer", [8], indirect=True)
 def test_predict_with_report_path(
     tmp_path, sample_input_csv, mock_pipeline, mock_trainer
 ):
@@ -173,7 +178,7 @@ def test_predict_with_report_path(
         assert result_df["habitability_prob"].between(0, 1).all()
 
 
-@pytest.mark.parametrize("mock_trainer", [7], indirect=True)
+@pytest.mark.parametrize("mock_trainer", [8], indirect=True)
 def test_predict_with_shap_path(
     tmp_path, sample_input_csv, mock_pipeline, mock_trainer
 ):

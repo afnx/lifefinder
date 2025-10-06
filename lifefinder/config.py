@@ -14,6 +14,7 @@ PROCESSED_DIR = Path(os.getenv("LIFEFINDER_PROCESSED", DATA_DIR / "processed"))
 # Cache and model directories
 CACHE_DIR = Path(os.getenv("LIFEFINDER_CACHE", ROOT / "cache"))
 MODELS_DIR = Path(os.getenv("LIFEFINDER_MODELS", ROOT / "models"))
+EVALUATION_DIR = Path(os.getenv("LIFEFINDER_EVALUATION", ROOT / "evaluation"))
 
 # Model checkpoint path
 MODEL_CHECKPOINT = MODELS_DIR / "exoplanet_model.pt"
@@ -66,7 +67,7 @@ NUMERIC_FEATURES = [
     "pl_bmassj",
     "pl_dens",
     "pl_orbeccen",
-    "pl_insol",
+    # "pl_insol", Removed to avoid data leakage as habitable_zone_index derived from it
     "pl_eqt",
     "st_teff",
     "st_rad",

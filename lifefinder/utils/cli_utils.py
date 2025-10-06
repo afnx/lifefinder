@@ -109,15 +109,16 @@ def display_model_metrics(metrics_file: str, fu: Any, logger: Any) -> None:
             with open(metrics_file, "r") as f:
                 metrics_data = json.load(f)
             logger.info(f"Training metrics from {metrics_file}:")
-            for entry in metrics_data:
-                if "config" in entry:
-                    config_str = json.dumps(entry["config"], indent=2)
+            if isinstance(metrics_data, dict):
+                if "config" in metrics_data:
+                    config_str = json.dumps(metrics_data["config"], indent=2)
                     logger.info(f"Training configuration:\n{config_str}")
-                if "epoch" in entry:
-                    logger.info(
-                        f"Epoch {entry['epoch']}: Loss={entry['loss']:.4f}, "
-                        f"Acc={entry['accuracy']:.3f}, F1={entry['f1']:.3f}"
-                    )
+                if "model" in metrics_data:
+                    model_str = json.dumps(metrics_data["model"], indent=2)
+                    logger.info(f"Model information:\n{model_str}")
+                if "training" in metrics_data:
+                    training_str = json.dumps(metrics_data["training"], indent=2)
+                    logger.info(f"Training information:\n{training_str}")
         except Exception as e:
             logger.error(f"Failed to read metrics file: {e}")
     else:

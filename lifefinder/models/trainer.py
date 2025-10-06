@@ -45,7 +45,7 @@ class Trainer:
             epoch_loss += loss.item()
         return epoch_loss / len(train_dataloader)
 
-    def evaluate(self, val_dataloader):
+    def evaluate(self, val_dataloader, threshold: float = 0.5):
         self.model.eval()
         y_true, y_pred = [], []
 
@@ -56,7 +56,7 @@ class Trainer:
                 outputs = self.model(X).squeeze()
 
                 # Convert outputs to binary predictions
-                preds = (outputs > 0.5).int()
+                preds = (outputs > threshold).int()
 
                 y_true.extend(y.numpy())
                 y_pred.extend(preds)
@@ -72,6 +72,6 @@ class Trainer:
         self.model.load_state_dict(torch.load(path, map_location=self.device))
 
     @staticmethod
-    def log_metrics(metrics_list: list, path):
+    def log_metrics(metrics: dict, path):
         with open(path, "w") as f:
-            json.dump(metrics_list, f, indent=2)
+            json.dump(metrics, f, indent=2)

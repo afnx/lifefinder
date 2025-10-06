@@ -1,27 +1,30 @@
 import os
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+env_file = Path.home() / ".lifefinder" / ".env"
+load_dotenv(dotenv_path=env_file)
+
+# Root directory for lifefinder configurations and data
+ROOT = Path.home() / ".lifefinder"
+
+# Directory for storing artifacts like models and logs
+ARTIFACTS_DIR = Path(os.getenv("ARTIFACTS_DIR", ROOT / "artifacts"))
 
 # Version
-VERSION = os.getenv("LIFEFINDER_VERSION", "0.0.1")
+VERSION = "0.0.1"
 
 # Data directories
-DATA_DIR = Path(os.getenv("LIFEFINDER_DATA", ROOT / "data"))
-RAW_DIR = Path(os.getenv("LIFEFINDER_RAW", DATA_DIR / "raw"))
-PROCESSED_DIR = Path(os.getenv("LIFEFINDER_PROCESSED", DATA_DIR / "processed"))
+DATA_DIR = Path(ARTIFACTS_DIR / "data")
+RAW_DIR = Path(DATA_DIR / "raw")
+PROCESSED_DIR = Path(DATA_DIR / "processed")
 
 # Cache and model directories
-CACHE_DIR = Path(os.getenv("LIFEFINDER_CACHE", ROOT / "cache"))
-MODELS_DIR = Path(os.getenv("LIFEFINDER_MODELS", ROOT / "models"))
-EVALUATION_DIR = Path(os.getenv("LIFEFINDER_EVALUATION", ROOT / "evaluation"))
-
-# Model checkpoint path
-MODEL_CHECKPOINT = MODELS_DIR / "exoplanet_model.pt"
-PIPELINE_PATH = MODELS_DIR / "exoplanet_pipeline.pkl"
-
-# Training log file
-TRAINING_LOG = CACHE_DIR / "training_log.json"
+CACHE_DIR = Path(ARTIFACTS_DIR / "cache")
+MODELS_DIR = Path(ARTIFACTS_DIR / "models")
+EVALUATION_DIR = Path(ARTIFACTS_DIR / "evaluation")
 
 # Default cache filename
 DEFAULT_EXOPLANETS_CSV = RAW_DIR / "exoplanets.csv"
@@ -49,11 +52,11 @@ TRAINING_CONFIG = {
     "val_split": float(os.getenv("VAL_SPLIT", 0.2)),
     "random_state": int(os.getenv("RANDOM_STATE", 42)),
     "patience": int(os.getenv("PATIENCE", 5)),
-    "hz_sigma": float(os.getenv("HABITABLE_ZONE_SIGMA", 100.0)),
+    "hz_sigma": float(os.getenv("HABITABLE_ZONE_SIGMA", 1.0)),
     "hz_threshold": float(os.getenv("HABITABLE_ZONE_THRESHOLD", 0.5)),
 }
 
-TARGET_FEATURE = "habitable_zone_index"
+TARGET_FEATURE = os.getenv("TARGET_FEATURE", "habitable_zone_index")
 
 NUMERIC_FEATURES = [
     "sy_snum",

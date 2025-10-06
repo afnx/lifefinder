@@ -1,6 +1,5 @@
 import torch
 import pytest
-import importlib
 
 import pandas as pd
 import numpy as np
@@ -8,32 +7,6 @@ import numpy as np
 from unittest.mock import patch, MagicMock
 
 from lifefinder.evaluate import evaluate
-from lifefinder import config as cfg
-
-
-@pytest.fixture(autouse=True)
-def reload_config():
-    """Reload config module before each test to ensure clean state."""
-    importlib.reload(cfg)
-
-
-@pytest.fixture(scope="session", autouse=True)
-def setup_tmp_dirs(tmp_path_factory):
-    """Redirect all config paths to a tmp folder so tests don't overwrite real files."""
-    tmpdir = tmp_path_factory.mktemp("lifefinder_eval_tests")
-    cfg.ROOT = tmpdir
-    cfg.DATA_DIR = tmpdir / "data"
-    cfg.EVALUATION_DIR = tmpdir / "evaluations"
-    cfg.MODELS_DIR = tmpdir / "models"
-
-    cfg.EVALUATION_DIR.mkdir(parents=True, exist_ok=True)
-    cfg.MODELS_DIR.mkdir(parents=True, exist_ok=True)
-
-    # Set up training config
-    cfg.TRAINING_CONFIG = {"hidden_dim": 64, "dropout": 0.2, "hz_threshold": 0.5}
-    cfg.TARGET_FEATURE = "habitable_zone_index"
-
-    return tmpdir
 
 
 @pytest.fixture

@@ -1,7 +1,6 @@
 import os
 import re
 import pytest
-import importlib
 
 import pandas as pd
 import numpy as np
@@ -10,27 +9,6 @@ from unittest.mock import patch
 
 from lifefinder.train import train
 from lifefinder import config as cfg
-from lifefinder.models.trainer import Trainer
-
-
-@pytest.fixture(scope="function", autouse=True)
-def setup_tmp_dirs_and_reload_config(tmp_path):
-    """Reload config and redirect all paths to tmp folder for each test."""
-    # Reload config to get fresh state
-    importlib.reload(cfg)
-
-    # Set up temporary directories
-    cfg.ROOT = tmp_path
-    cfg.DATA_DIR = tmp_path / "data"
-    cfg.RAW_DIR = cfg.DATA_DIR / "raw"
-    cfg.PROCESSED_DIR = cfg.DATA_DIR / "processed"
-    cfg.CACHE_DIR = tmp_path / "cache"
-    cfg.MODELS_DIR = tmp_path / "models"
-
-    cfg.MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    cfg.CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
-    return tmp_path
 
 
 @pytest.fixture
@@ -55,6 +33,8 @@ def dummy_exoplanet_df():
 
 @patch("lifefinder.train.NasaExoplanetClient")
 def test_training_runs(mock_client, dummy_exoplanet_df):
+    from lifefinder.models.trainer import Trainer
+
     # Mock the NASA client to return dummy data
     mock_instance = mock_client.return_value
     mock_instance.fetch_exoplanets.return_value = dummy_exoplanet_df
@@ -118,6 +98,8 @@ def test_training_runs(mock_client, dummy_exoplanet_df):
 
 @patch("lifefinder.train.NasaExoplanetClient")
 def test_training_retrain(mock_client, dummy_exoplanet_df):
+    from lifefinder.models.trainer import Trainer
+
     # Mock the NASA client to return dummy data
     mock_instance = mock_client.return_value
     mock_instance.fetch_exoplanets.return_value = dummy_exoplanet_df

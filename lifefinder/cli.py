@@ -32,7 +32,12 @@ def main(
 
 
 @app.command()
-def configure():
+def configure(
+    verbose: Annotated[
+        bool,
+        typer.Option("--verbose", "-v", help="Enable verbose output"),
+    ] = False,
+):
     """Configure the LifeFinder settings."""
 
     # Import logger here to avoid circular dependencies
@@ -119,7 +124,7 @@ def configure():
             "Could not create configuration file. Check permissions and try again."
         )
     except Exception as e:
-        logger.error(f"{e}", exc_info=False)
+        logger.error(f"{e}", exc_info=verbose)
 
 
 @app.command()
@@ -132,6 +137,10 @@ def train(
         typer.Option(
             "--retrain", help="Retrain using existing pipeline and model files"
         ),
+    ] = False,
+    verbose: Annotated[
+        bool,
+        typer.Option("--verbose", "-v", help="Enable verbose output"),
     ] = False,
 ):
     """Train the life expectancy model."""
@@ -286,11 +295,16 @@ def train(
             "One or more specified files were not found. Please check the paths and try again."
         )
     except Exception as e:
-        logger.error(f"{e}", exc_info=False)
+        logger.error(f"{e}", exc_info=verbose)
 
 
 @app.command()
-def predict():
+def predict(
+    verbose: Annotated[
+        bool,
+        typer.Option("--verbose", "-v", help="Enable verbose output"),
+    ] = False,
+):
     """Predict habitability of exoplanets using a trained model."""
 
     # Import logger here to avoid circular dependencies
@@ -396,11 +410,16 @@ def predict():
             "One or more specified files were not found. Please check the paths and try again."
         )
     except Exception as e:
-        logger.error(f"{e}", exc_info=False)
+        logger.error(f"{e}", exc_info=verbose)
 
 
 @app.command()
-def evaluate():
+def evaluate(
+    verbose: Annotated[
+        bool,
+        typer.Option("--verbose", "-v", help="Enable verbose output"),
+    ] = False,
+):
     """Evaluate the trained model on a dataset."""
 
     # Import logger here to avoid circular dependencies
@@ -480,11 +499,16 @@ def evaluate():
             "One or more specified files were not found. Please check the paths and try again."
         )
     except Exception as e:
-        logger.error(f"{e}", exc_info=False)
+        logger.error(f"{e}", exc_info=verbose)
 
 
 @app.command()
-def clean():
+def clean(
+    verbose: Annotated[
+        bool,
+        typer.Option("--verbose", "-v", help="Enable verbose output"),
+    ] = False,
+):
     """Clean the input CSV file of exoplanet data."""
 
     # Import logger here to avoid circular dependencies
@@ -533,7 +557,7 @@ def clean():
             "One or more specified files were not found. Please check the paths and try again."
         )
     except Exception as e:
-        logger.error(f"{e}", exc_info=True)
+        logger.error(f"{e}", exc_info=verbose)
 
 
 def _check_configuration():

@@ -198,6 +198,9 @@ def train(
             # Mark this epoch as best
             epoch_log["is_best"] = True
 
+            # Append epoch log
+            training_log.append(epoch_log)
+
             model_version = f"f1-{best_f1:.3f}_{timestamp}"
             model_path = cfg.MODELS_DIR / f"model_{model_version}.pt"
             pipeline_path = cfg.MODELS_DIR / f"pipeline_{model_version}.pkl"
@@ -231,15 +234,15 @@ def train(
 
             logger.info(f"New best model saved with F1={f1:.3f} at: {model_path}")
         else:
+            # Append epoch log
+            training_log.append(epoch_log)
+
             # Increment patience counter
             # Stop if no improvement for 'patience' epochs
             patience_counter += 1
             if patience_counter >= cfg.TRAINING_CONFIG["patience"]:
                 logger.info("Early stopping triggered.")
                 break
-
-        # Append epoch log
-        training_log.append(epoch_log)
 
     logger.info("Training complete.")
 

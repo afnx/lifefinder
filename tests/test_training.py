@@ -26,9 +26,6 @@ def setup_tmp_dirs_and_reload_config(tmp_path):
     cfg.PROCESSED_DIR = cfg.DATA_DIR / "processed"
     cfg.CACHE_DIR = tmp_path / "cache"
     cfg.MODELS_DIR = tmp_path / "models"
-    cfg.MODEL_CHECKPOINT = cfg.MODELS_DIR / "exoplanet_model.pt"
-    cfg.PIPELINE_PATH = cfg.MODELS_DIR / "exoplanet_pipeline.pkl"
-    cfg.TRAINING_LOG = cfg.CACHE_DIR / "training_log.json"
 
     cfg.MODELS_DIR.mkdir(parents=True, exist_ok=True)
     cfg.CACHE_DIR.mkdir(parents=True, exist_ok=True)

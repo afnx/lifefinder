@@ -48,24 +48,33 @@ def configure(
     from pathlib import Path
 
     try:
-        example_path = Path(__file__).parent / ".env.example"
-        env_path = Path.home() / ".lifefinder" / ".env"
+        # Use importlib.resources for proper resource access
+        try:
+            # Python 3.9+
+            from importlib.resources import files
 
+            example_content = (files("lifefinder") / ".env.example").read_text()
+        except ImportError:
+            # Python 3.8 fallback
+            from importlib.resources import read_text
+
+            example_content = read_text("lifefinder", ".env.example")
+
+        env_path = Path.home() / ".lifefinder" / ".env"
         logger.info("Starting configuration process...")
         logger.info("You can abort at any time by pressing Ctrl+C.")
 
         config = []
-        with open(example_path, "r") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    config.append((line, None))
+        for line in example_content.split("\n"):
+            line = line.strip()
+            if not line or line.startswith("#"):
+                config.append((line, None))
+            else:
+                if "=" in line:
+                    key, val = line.split("=", 1)
+                    config.append((key.strip(), val.strip()))
                 else:
-                    if "=" in line:
-                        key, val = line.split("=", 1)
-                        config.append((key.strip(), val.strip()))
-                    else:
-                        config.append((line, None))
+                    config.append((line, None))
 
         logger.info("Please enter the configuration values.\n")
 

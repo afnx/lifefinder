@@ -1,12 +1,20 @@
+import torch
 import pytest
+import importlib
+
 import pandas as pd
 import numpy as np
-import torch
 
 from unittest.mock import patch, MagicMock
 
 from lifefinder.evaluate import evaluate
 from lifefinder import config as cfg
+
+
+@pytest.fixture(autouse=True)
+def reload_config():
+    """Reload config module before each test to ensure clean state."""
+    importlib.reload(cfg)
 
 
 @pytest.fixture(scope="session", autouse=True)

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lifefinder"
-version = "0.0.1"
+version = "0.0.2"
 description = "Exoplanet Life Probability Calculator "
 readme = "README.md"
 authors = [{ name = "Ali Fuat Numanoglu", email = "afn@alifuatnumanoglu.com" }]
@@ -51,3 +51,9 @@ lifefinder = "lifefinder.cli:app"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["lifefinder*"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+lifefinder = ["*.example"]

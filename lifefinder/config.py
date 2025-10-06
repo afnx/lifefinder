@@ -14,7 +14,7 @@ ROOT = Path.home() / ".lifefinder"
 ARTIFACTS_DIR = Path(os.getenv("ARTIFACTS_DIR", ROOT / "artifacts"))
 
 # Version
-VERSION = "0.0.1"
+VERSION = "0.0.2"
 
 # Data directories
 DATA_DIR = Path(ARTIFACTS_DIR / "data")

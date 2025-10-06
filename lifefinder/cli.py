@@ -32,7 +32,12 @@ def main(
 
 
 @app.command()
-def configure():
+def configure(
+    verbose: Annotated[
+        bool,
+        typer.Option("--verbose", "-v", help="Enable verbose output"),
+    ] = False,
+):
     """Configure the LifeFinder settings."""
 
     # Import logger here to avoid circular dependencies
@@ -43,24 +48,33 @@ def configure():
     from pathlib import Path
 
     try:
-        example_path = Path(__file__).parent / ".env.example"
-        env_path = Path.home() / ".lifefinder" / ".env"
+        # Use importlib.resources for proper resource access
+        try:
+            # Python 3.9+
+            from importlib.resources import files
 
+            example_content = (files("lifefinder") / ".env.example").read_text()
+        except ImportError:
+            # Python 3.8 fallback
+            from importlib.resources import read_text
+
+            example_content = read_text("lifefinder", ".env.example")
+
+        env_path = Path.home() / ".lifefinder" / ".env"
         logger.info("Starting configuration process...")
         logger.info("You can abort at any time by pressing Ctrl+C.")
 
         config = []
-        with open(example_path, "r") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    config.append((line, None))
+        for line in example_content.split("\n"):
+            line = line.strip()
+            if not line or line.startswith("#"):
+                config.append((line, None))
+            else:
+                if "=" in line:
+                    key, val = line.split("=", 1)
+                    config.append((key.strip(), val.strip()))
                 else:
-                    if "=" in line:
-                        key, val = line.split("=", 1)
-                        config.append((key.strip(), val.strip()))
-                    else:
-                        config.append((line, None))
+                    config.append((line, None))
 
         logger.info("Please enter the configuration values.\n")
 
@@ -119,7 +133,7 @@ def configure():
             "Could not create configuration file. Check permissions and try again."
         )
     except Exception as e:
-        logger.error(f"{e}", exc_info=False)
+        logger.error(f"{e}", exc_info=verbose)
 
 
 @app.command()
@@ -132,6 +146,10 @@ def train(
         typer.Option(
             "--retrain", help="Retrain using existing pipeline and model files"
         ),
+    ] = False,
+    verbose: Annotated[
+        bool,
+        typer.Option("--verbose", "-v", help="Enable verbose output"),
     ] = False,
 ):
     """Train the life expectancy model."""
@@ -286,11 +304,16 @@ def train(
             "One or more specified files were not found. Please check the paths and try again."
         )
     except Exception as e:
-        logger.error(f"{e}", exc_info=False)
+        logger.error(f"{e}", exc_info=verbose)
 
 
 @app.command()
-def predict():
+def predict(
+    verbose: Annotated[
+        bool,
+        typer.Option("--verbose", "-v", help="Enable verbose output"),
+    ] = False,
+):
     """Predict habitability of exoplanets using a trained model."""
 
     # Import logger here to avoid circular dependencies
@@ -396,11 +419,16 @@ def predict():
             "One or more specified files were not found. Please check the paths and try again."
         )
     except Exception as e:
-        logger.error(f"{e}", exc_info=False)
+        logger.error(f"{e}", exc_info=verbose)
 
 
 @app.command()
-def evaluate():
+def evaluate(
+    verbose: Annotated[
+        bool,
+        typer.Option("--verbose", "-v", help="Enable verbose output"),
+    ] = False,
+):
     """Evaluate the trained model on a dataset."""
 
     # Import logger here to avoid circular dependencies
@@ -480,11 +508,16 @@ def evaluate():
             "One or more specified files were not found. Please check the paths and try again."
         )
     except Exception as e:
-        logger.error(f"{e}", exc_info=False)
+        logger.error(f"{e}", exc_info=verbose)
 
 
 @app.command()
-def clean():
+def clean(
+    verbose: Annotated[
+        bool,
+        typer.Option("--verbose", "-v", help="Enable verbose output"),
+    ] = False,
+):
     """Clean the input CSV file of exoplanet data."""
 
     # Import logger here to avoid circular dependencies
@@ -533,7 +566,7 @@ def clean():
             "One or more specified files were not found. Please check the paths and try again."
         )
     except Exception as e:
-        logger.error(f"{e}", exc_info=True)
+        logger.error(f"{e}", exc_info=verbose)
 
 
 def _check_configuration():

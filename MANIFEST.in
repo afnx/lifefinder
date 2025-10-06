@@ -1,0 +1,4 @@
+include lifefinder/.env.example
+include README.md
+include LICENSE
+recursive-include lifefinder *.py

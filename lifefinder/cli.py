@@ -60,21 +60,37 @@ def train(
     from lifefinder import config as cfg
 
     try:
+        # Default model parameters
+        hidden_dim: int = cfg.TRAINING_CONFIG["hidden_dim"]
+        dropout: float = cfg.TRAINING_CONFIG["dropout"]
+
         # Handle retrain/model selection logic
         model_file, pipeline_file, metrics_file = None, None, None
         if retrain:
             model_file, pipeline_file, metrics_file = cli.prompt_model_selection(
                 fu, cfg, logger
             )
-            cli.display_model_metrics(metrics_file, fu, logger)
+
+            # Load config and model info from metrics file
+            config, _ = fu.extract_config_and_model_from_metrics(metrics_file)
+
+            if not isinstance(config, dict) or not config:
+                logger.error("Config loaded from metrics file is empty or invalid.")
+                raise typer.Exit(code=1)
+
+            # Update relevant training config settings
+            cfg.TRAINING_CONFIG.update(config)
+            # Override hidden_dim and dropout from loaded config
+            hidden_dim = cfg.TRAINING_CONFIG["hidden_dim"]
+            dropout = cfg.TRAINING_CONFIG["dropout"]
 
         if default:
-            logger.info("Using default settings from .env file.")
-
             if retrain and model_file and pipeline_file:
-                logger.warning(
-                    "Ensure the selected model and pipeline match the default config."
+                logger.info(
+                    "Using hyperparameters from the selected model's metrics file."
                 )
+            else:
+                logger.info("Using default settings from .env file.")
 
             logger.info("Starting the training process...")
 
@@ -91,9 +107,8 @@ def train(
             return
 
         logger.info(
-            "You can also run with --default to use default settings from the .env file."
+            "You can also run with --default to use default settings from the .env file.\n"
         )
-        logger.info("Please provide the following parameters:\n")
 
         force = typer.confirm("Force data fetching?", default=False)
         input_limit: int = typer.prompt(
@@ -108,12 +123,16 @@ def train(
         learning_rate: float = typer.prompt(
             "Learning rate", default=cfg.TRAINING_CONFIG["learning_rate"]
         )
-        hidden_dim: int = typer.prompt(
-            "Hidden layer dimension", default=cfg.TRAINING_CONFIG["hidden_dim"]
-        )
-        dropout: float = typer.prompt(
-            "Dropout rate", default=cfg.TRAINING_CONFIG["dropout"]
-        )
+
+        # Only prompt for these if not retraining
+        if not retrain:
+            hidden_dim = typer.prompt(
+                "Hidden layer dimension", default=cfg.TRAINING_CONFIG["hidden_dim"]
+            )
+            dropout = typer.prompt(
+                "Dropout rate", default=cfg.TRAINING_CONFIG["dropout"]
+            )
+
         val_split: float = typer.prompt(
             "Validation split", default=cfg.TRAINING_CONFIG["val_split"]
         )
@@ -168,6 +187,10 @@ def train(
     except typer.Abort:
         print("\n")
         logger.warning("Training interrupted by user.")
+    except FileNotFoundError:
+        logger.error(
+            "One or more specified files were not found. Please check the paths and try again."
+        )
     except Exception as e:
         logger.error(f"{e}", exc_info=True)
 
@@ -191,10 +214,8 @@ def predict():
     from lifefinder import config as cfg
 
     try:
-        print("Please provide the following parameters:\n")
-
         input_file: str = typer.prompt(
-            "Path to the input CSV file (e.g., /home/user/exoplanets.csv)"
+            "\nPath to the input CSV file (e.g., /home/user/exoplanets.csv)"
         ).strip()
 
         logger.info(f"Input file selected: {input_file}")
@@ -215,12 +236,15 @@ def predict():
         if display_metrics:
             cli.display_model_metrics(metrics_file, fu, logger)
 
-        hidden_dim: int = typer.prompt(
-            "Hidden layer dimension", default=cfg.TRAINING_CONFIG["hidden_dim"]
-        )
-        dropout: float = typer.prompt(
-            "Dropout rate", default=cfg.TRAINING_CONFIG["dropout"]
-        )
+        # Load config and model info from metrics file
+        config, _ = fu.extract_config_and_model_from_metrics(metrics_file)
+
+        if not isinstance(config, dict) or not config:
+            logger.error("Config loaded from metrics file is empty or invalid.")
+            raise typer.Exit(code=1)
+
+        # Update relevant training config settings
+        cfg.TRAINING_CONFIG.update(config)
 
         save_report_confirm = typer.confirm(
             "Would you like to save the prediction report?", default=False
@@ -253,10 +277,6 @@ def predict():
                 shap_path, "SHAP plot file", ["png", "pdf"], allow_nonexistent=True
             )
 
-        # Update config with any CLI overrides
-        cfg.TRAINING_CONFIG["hidden_dim"] = hidden_dim
-        cfg.TRAINING_CONFIG["dropout"] = dropout
-
         # Run prediction
         result = predict_habitability(
             input_file, pipeline_file, model_file, report_path, shap_path
@@ -274,6 +294,91 @@ def predict():
     except typer.Abort:
         print("\n")
         logger.warning("Prediction interrupted by user.")
+    except FileNotFoundError:
+        logger.error(
+            "One or more specified files were not found. Please check the paths and try again."
+        )
+    except Exception as e:
+        logger.error(f"{e}", exc_info=True)
+
+
+@app.command()
+def evaluate():
+    """Evaluate the trained model on a dataset."""
+
+    # Import logger here to avoid circular dependencies
+    from lifefinder.utils.logger import get_logger
+
+    logger = get_logger("evaluate")
+
+    logger.info("Initializing evaluation process...")
+    logger.info("You can abort at any time by pressing Ctrl+C.")
+
+    # Import other dependencies here to avoid circular dependencies
+    import json
+    import lifefinder.utils.cli_utils as cli
+    import lifefinder.utils.file_utils as fu
+    from lifefinder.evaluate import evaluate as evaluate_model
+    from lifefinder import config as cfg
+
+    try:
+        input_file: str = typer.prompt(
+            "\nPath to the input CSV file (e.g., /home/user/exoplanets.csv)"
+        ).strip()
+
+        logger.info(f"Input file selected: {input_file}")
+
+        # Validate input file
+        fu.validate_file(input_file, "Input file", ["csv"])
+
+        # Select model
+        model_file, pipeline_file, metrics_file = cli.prompt_model_selection(
+            fu, cfg, logger
+        )
+
+        # Validate metrics file
+        fu.validate_file(metrics_file, "Metrics file", ["json"])
+
+        # Load config and model info from metrics file
+        config, model = fu.extract_config_and_model_from_metrics(metrics_file)
+
+        # Update target feature if specified in model
+        target_feature = model.get("target_feature", cfg.TARGET_FEATURE)
+        cfg.TARGET_FEATURE = target_feature
+
+        # Update relevant training config settings
+        for key in ["hidden_dim", "dropout", "hz_threshold"]:
+            if key in config:
+                cfg.TRAINING_CONFIG[key] = config[key]
+
+        compute_shap_confirm = typer.confirm(
+            "Would you like to compute SHAP values during evaluation?", default=True
+        )
+
+        # Run evaluation
+        result = evaluate_model(
+            input_file,
+            model_file,
+            pipeline_file,
+            label_column=target_feature,
+            compute_shap=compute_shap_confirm,
+        )
+
+        if result:
+            result_str = json.dumps(result, indent=2)
+            logger.info(f"Evaluation results:\n{result_str}")
+        else:
+            logger.error("Evaluation failed or returned no results.")
+    except KeyboardInterrupt:
+        print("\n")
+        logger.warning("Evaluation interrupted by user.")
+    except typer.Abort:
+        print("\n")
+        logger.warning("Evaluation interrupted by user.")
+    except FileNotFoundError:
+        logger.error(
+            "One or more specified files were not found. Please check the paths and try again."
+        )
     except Exception as e:
         logger.error(f"{e}", exc_info=True)
 
@@ -296,7 +401,7 @@ def clean():
 
     try:
         input_file: str = typer.prompt(
-            "Path to the input CSV file (e.g., /home/user/exoplanets.csv)"
+            "\nPath to the input CSV file (e.g., /home/user/exoplanets.csv)"
         ).strip()
 
         logger.info(f"Input file selected: {input_file}")
@@ -323,6 +428,10 @@ def clean():
     except typer.Abort:
         print("\n")
         logger.warning("Cleaning interrupted by user.")
+    except FileNotFoundError:
+        logger.error(
+            "One or more specified files were not found. Please check the paths and try again."
+        )
     except Exception as e:
         logger.error(f"{e}", exc_info=True)
 

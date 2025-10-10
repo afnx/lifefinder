@@ -30,7 +30,8 @@ Or clone the repository and use Docker for containerized environment:
 ```bash
 git clone https://github.com/afnx/lifefinder.git
 
-docker compose up -d
+cd lifefinder
+docker compose -f .devcontainer/compose.yaml up -d
 ```
 
 ## Usage
